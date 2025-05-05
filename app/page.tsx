@@ -1,103 +1,276 @@
-import Image from "next/image";
+"use client"; 
+
+import React, { useState, useEffect } from "react";
+
+
+const ROWS = 10;
+const COLS = 10;
+const CELL_SIZE = 30; 
+
+
+interface Cell {
+  row: number;
+  col: number;
+  topWall: boolean;
+  bottomWall: boolean;
+  leftWall: boolean;
+  rightWall: boolean;
+  visited: boolean;
+}
+
+
+
+
+const initializeGrid = (rows: number, cols: number): Cell[][] => {
+  const grid: Cell[][] = [];
+  for (let r = 0; r < rows; r++) {
+    grid[r] = [];
+    for (let c = 0; c < cols; c++) {
+      grid[r][c] = {
+        row: r,
+        col: c,
+        topWall: true,
+        bottomWall: true,
+        leftWall: true,
+        rightWall: true,
+        visited: false,
+      };
+    }
+  }
+  return grid;
+};
+
+
+const getUnvisitedNeighbors = (cell: Cell, grid: Cell[][]): Cell[] => {
+  const neighbors: Cell[] = [];
+  const { row, col } = cell;
+
+  
+  if (row > 0 && !grid[row - 1][col].visited) {
+    neighbors.push(grid[row - 1][col]);
+  }
+  
+  if (col < COLS - 1 && !grid[row][col + 1].visited) {
+    neighbors.push(grid[row][col + 1]);
+  }
+  
+  if (row < ROWS - 1 && !grid[row + 1][col].visited) {
+    neighbors.push(grid[row + 1][col]);
+  }
+  
+  if (col > 0 && !grid[row][col - 1].visited) {
+    neighbors.push(grid[row][col - 1]);
+  }
+
+  return neighbors;
+};
+
+
+const removeWall = (current: Cell, next: Cell) => {
+  const rowDiff = current.row - next.row;
+  const colDiff = current.col - next.col;
+
+  if (rowDiff === 1) {
+    
+    current.topWall = false;
+    next.bottomWall = false;
+  } else if (rowDiff === -1) {
+    
+    current.bottomWall = false;
+    next.topWall = false;
+  }
+
+  if (colDiff === 1) {
+    
+    current.leftWall = false;
+    next.rightWall = false;
+  } else if (colDiff === -1) {
+    
+    current.rightWall = false;
+    next.leftWall = false;
+  }
+};
+
+
+const generateMaze = (rows: number, cols: number): Cell[][] => {
+  const grid = initializeGrid(rows, cols);
+  const stack: Cell[] = [];
+  let currentCell = grid[0][0]; 
+  currentCell.visited = true;
+  stack.push(currentCell);
+
+  while (stack.length > 0) {
+    currentCell = stack[stack.length - 1]; 
+    const neighbors = getUnvisitedNeighbors(currentCell, grid);
+
+    if (neighbors.length > 0) {
+      
+      const randomIndex = Math.floor(Math.random() * neighbors.length);
+      const nextCell = neighbors[randomIndex];
+
+      
+      removeWall(currentCell, nextCell);
+
+      
+      nextCell.visited = true;
+      stack.push(nextCell);
+    } else {
+      
+      stack.pop();
+    }
+  }
+
+  
+  grid[0][0].leftWall = false; 
+  grid[rows - 1][cols - 1].rightWall = false; 
+
+  return grid;
+};
+
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [grid, setGrid] = useState<Cell[][]>([]);
+  const [characterPos, setCharacterPos] = useState({ row: 0, col: 0 }); 
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    
+    const newGrid = generateMaze(ROWS, COLS);
+    setGrid(newGrid);
+    
+    
+  }, []); 
+
+  
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!grid.length) return; 
+
+      const { row, col } = characterPos;
+      const currentCell = grid[row][col];
+      let newRow = row;
+      let newCol = col;
+      let moved = false;
+
+      switch (event.key) {
+        case "ArrowUp":
+          if (!currentCell.topWall && row > 0) {
+            newRow--;
+            moved = true;
+          }
+          break;
+        case "ArrowDown":
+          if (!currentCell.bottomWall && row < ROWS - 1) {
+            newRow++;
+            moved = true;
+          }
+          break;
+        case "ArrowLeft":
+          if (!currentCell.leftWall && col > 0) {
+            newCol--;
+            moved = true;
+          }
+          break;
+        case "ArrowRight":
+          if (!currentCell.rightWall && col < COLS - 1) {
+            newCol++;
+            moved = true;
+          }
+          break;
+        default:
+          break; 
+      }
+
+      if (moved) {
+        setCharacterPos({ row: newRow, col: newCol });
+
+        
+        if (newRow === ROWS - 1 && newCol === COLS - 1) {
+          
+          setTimeout(() => {
+            alert("Congratulations! You reached the exit!");
+            
+          }, 0);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [characterPos, grid]); 
+
+  
+  const gridStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`,
+    gridTemplateRows: `repeat(${ROWS}, ${CELL_SIZE}px)`,
+    border: "1px solid black", 
+    width: COLS * CELL_SIZE,
+    margin: "20px auto", 
+  };
+
+  const getCellStyle = (cell: Cell): React.CSSProperties => ({
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    borderTop: cell.topWall ? "1px solid black" : "none",
+    borderBottom: cell.bottomWall ? "1px solid black" : "none",
+    borderLeft: cell.leftWall ? "1px solid black" : "none",
+    borderRight: cell.rightWall ? "1px solid black" : "none",
+    boxSizing: "border-box", 
+    position: "relative", 
+    
+  });
+
+  
+  const characterStyle: React.CSSProperties = {
+    width: CELL_SIZE * 0.6,
+    height: CELL_SIZE * 0.6,
+    backgroundColor: "red",
+    borderRadius: "50%",
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)", 
+    transition: "all 0.1s linear", 
+  };
+
+  return (
+    <div>
+      <h1>Maze Generator</h1>
+      {grid.length > 0 ? (
+        <div style={gridStyle}>
+          {grid.map((row, rowIndex) =>
+            row.map((cell, colIndex) => (
+              <div key={`${rowIndex}-${colIndex}`} style={getCellStyle(cell)}>
+                {/* Render character if it's in this cell */}
+                {characterPos.row === rowIndex &&
+                  characterPos.col === colIndex && (
+                    <div style={characterStyle}></div>
+                  )}
+                {/* Optional: Visually mark the exit */}
+                {rowIndex === ROWS - 1 && colIndex === COLS - 1 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "rgba(0, 255, 0, 0.2)", 
+                      pointerEvents: "none", 
+                    }}
+                  ></div>
+                )}
+              </div>
+            ))
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : (
+        <p>Generating maze...</p>
+      )}
     </div>
   );
 }
